@@ -1,0 +1,3 @@
+[server]
+# Nur auf diesem Rechner erreichbar (nicht im WLAN/Netzwerk)
+address = "localhost"

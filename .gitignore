@@ -1,0 +1,8 @@
+# Geheimnisse – niemals ins Git!
+.env
+
+# Virtuelle Umgebung und Python-Cache
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
