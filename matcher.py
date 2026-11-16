@@ -6,6 +6,7 @@ from typing import Callable, List, Optional
 import anthropic
 
 import config
+from kosten import Verbrauch
 from models import Bewertung, Ergebnis, Stelle, SuchParameter
 
 ANWEISUNGEN = """Du bist ein erfahrener Karriereberater. Du bewertest, wie gut eine Stellenanzeige
@@ -49,7 +50,7 @@ Anzeigentext:
 {stelle.beschreibung}"""
 
 
-def bewerte_stelle(client: anthropic.Anthropic, profil: str, stelle: Stelle) -> Ergebnis:
+def bewerte_stelle(client: anthropic.Anthropic, profil: str, stelle: Stelle, verbrauch: Verbrauch) -> Ergebnis:
     try:
         antwort = client.messages.parse(
             model=config.CLAUDE_MODELL,
@@ -69,6 +70,7 @@ def bewerte_stelle(client: anthropic.Anthropic, profil: str, stelle: Stelle) -> 
     except anthropic.APIConnectionError:
         return Ergebnis(stelle, fehler="Keine Verbindung zur Claude API.")
 
+    verbrauch.add(antwort.usage)
     if antwort.stop_reason == "refusal" or antwort.parsed_output is None:
         return Ergebnis(stelle, fehler="Claude hat keine gültige Bewertung geliefert.")
 
@@ -81,6 +83,7 @@ def bewerte_alle(
     lebenslauf: str,
     params: SuchParameter,
     stellen: List[Stelle],
+    verbrauch: Verbrauch,
     fortschritt: Optional[Callable[[int, int], None]] = None,
 ) -> List[Ergebnis]:
     """Bewertet alle Stellen parallel und gibt sie nach Punktzahl sortiert zurück."""
@@ -89,7 +92,7 @@ def bewerte_alle(
 
     ergebnisse: List[Ergebnis] = []
     with ThreadPoolExecutor(max_workers=config.PARALLELE_BEWERTUNGEN) as pool:
-        for i, ergebnis in enumerate(pool.map(lambda s: bewerte_stelle(client, profil, s), stellen), 1):
+        for i, ergebnis in enumerate(pool.map(lambda s: bewerte_stelle(client, profil, s, verbrauch), stellen), 1):
             ergebnisse.append(ergebnis)
             if fortschritt:
                 fortschritt(i, len(stellen))

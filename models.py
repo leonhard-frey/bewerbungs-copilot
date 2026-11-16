@@ -1,6 +1,6 @@
 """Datenmodelle: Welche Informationen die App herumreicht."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -34,6 +34,7 @@ class Stelle:
     link: str
     quelle: str
     gehalt: Optional[str] = None  # nur gesetzt, wenn die Anzeige ein Gehalt nennt
+    weitere_links: List[str] = field(default_factory=list)  # z. B. dieselbe Stelle aus der anderen Quelle
 
 
 class Bewertung(BaseModel):

@@ -10,6 +10,7 @@ from typing import List, Optional
 import requests
 
 import config
+from kosten import Verbrauch
 from models import Stelle, SuchParameter
 from sources.base import JobQuelle
 
@@ -29,7 +30,8 @@ TIMEOUT = 20  # Sekunden
 class ArbeitsagenturQuelle(JobQuelle):
     name = "Arbeitsagentur"
 
-    def suche(self, params: SuchParameter, max_treffer: int) -> List[Stelle]:
+    def suche(self, params: SuchParameter, max_treffer: int, verbrauch: Verbrauch) -> List[Stelle]:
+        # Die BA-API ist kostenlos, daher wird `verbrauch` hier nicht gebraucht.
         treffer = self._suche_liste(params, max_treffer)
         # Details (Beschreibungstext) für alle Treffer parallel laden
         with ThreadPoolExecutor(max_workers=5) as pool:
