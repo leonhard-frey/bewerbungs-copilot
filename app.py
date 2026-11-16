@@ -84,6 +84,18 @@ for quelle in aktive_quellen(web):
             st.warning(f"Suche bei {quelle.name} fehlgeschlagen: {e}")
     for hinweis in quelle.hinweise:
         st.info(hinweis)
+    bericht = getattr(quelle, "pruefbericht", None)  # nur die Websuche prüft ihre Treffer
+    if bericht and bericht.geprueft:
+        titel = (
+            f"🔎 Web-Treffer geprüft: {bericht.geprueft} · ✅ bestätigt: {bericht.bestaetigt}"
+            f" · ❌ verworfen: {len(bericht.verworfen)}"
+        )
+        with st.expander(titel):
+            if bericht.direktlink_gefunden:
+                st.markdown(f"Bei {bericht.direktlink_gefunden} Stelle(n) wurde über eine Sammelseite der direkte Link zur Anzeige gefunden.")
+            for stelle_text, grund in bericht.verworfen:
+                st.markdown(f"- **{stelle_text}**: {grund}")
+            st.caption(f"Kosten der Prüfung: ca. {bericht.verbrauch.kosten_usd():.3f} $ ({bericht.verbrauch.web_abrufe} Seitenabrufe)".replace(".", ","))
 
 anzahl_vorher = len(stellen)
 stellen = fuehre_zusammen(stellen)
@@ -141,8 +153,9 @@ for e in ergebnisse:
 # ---------- 5. Verbrauch ----------
 st.divider()
 st.subheader("Verbrauch dieses Durchlaufs")
-k1, k2, k3, k4 = st.columns(4)
+k1, k5, k2, k3, k4 = st.columns(5)
 k1.metric("Websuchen", verbrauch.web_suchen)
+k5.metric("Seitenabrufe", verbrauch.web_abrufe, help="Web-Fetch: kostet nichts extra, nur die Tokens des Seiteninhalts (in den Tokens enthalten).")
 k2.metric("Eingabe-Tokens", f"{verbrauch.input_tokens + verbrauch.cache_write_tokens + verbrauch.cache_read_tokens:,}".replace(",", "."))
 k3.metric("Ausgabe-Tokens", f"{verbrauch.output_tokens:,}".replace(",", "."))
 k4.metric("Kosten (ca.)", f"{verbrauch.kosten_usd():.3f} $".replace(".", ","))

@@ -2,11 +2,11 @@
 
 Claude sucht im Web nach Stellen (Karriereseiten, Bewerbungsportale) und gibt sie als JSON zurück.
 Schutz vor erfundenen Stellen: Eine Stelle wird nur übernommen, wenn ihr Link
-tatsächlich in den Suchergebnissen vorkam.
+tatsächlich in den Suchergebnissen vorkam. Danach wird jede Stelle geöffnet und geprüft
+(siehe web_pruefung.py).
 """
 
-from typing import List, Set
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from typing import List, Optional, Set
 
 import anthropic
 from pydantic import BaseModel, Field
@@ -15,6 +15,8 @@ import config
 from kosten import Verbrauch
 from models import Stelle, SuchParameter
 from sources.base import JobQuelle
+from sources.urls import normalisiere_url
+from sources.web_pruefung import PruefBericht, pruefe_web_stellen
 
 MAX_FORTSETZUNGEN = 3  # wie oft eine pausierte Suche (pause_turn) fortgesetzt wird
 
@@ -51,6 +53,7 @@ class ClaudeWebsucheQuelle(JobQuelle):
 
     def suche(self, params: SuchParameter, max_treffer: int, verbrauch: Verbrauch) -> List[Stelle]:
         self.hinweise = []
+        self.pruefbericht: Optional[PruefBericht] = None
         max_treffer = min(max_treffer, config.WEB_MAX_TREFFER)
         client = anthropic.Anthropic()
 
@@ -114,6 +117,8 @@ class ClaudeWebsucheQuelle(JobQuelle):
             self.hinweise.append(
                 f"Websuche: {verworfen} Treffer verworfen, weil der Link nicht in den Suchergebnissen vorkam."
             )
+        # Jede Stelle öffnen: gelöschte Anzeigen und Sammelseiten aussortieren, vollen Anzeigentext holen
+        stellen, self.pruefbericht = pruefe_web_stellen(stellen, verbrauch)
         return stellen
 
 
@@ -142,11 +147,3 @@ def _urls_aus_suchergebnissen(content) -> Set[str]:
                 urls.add(normalisiere_url(url))
     return urls
 
-
-def normalisiere_url(url: str) -> str:
-    """Macht URLs vergleichbar: Host klein, ohne www., ohne / am Ende, ohne #… und utm_-Parameter."""
-    teile = urlsplit(url.strip())
-    host = teile.netloc.lower().removeprefix("www.")
-    pfad = teile.path.rstrip("/")
-    query = urlencode([(k, v) for k, v in parse_qsl(teile.query) if not k.lower().startswith("utm_")])
-    return urlunsplit((teile.scheme.lower() or "https", host, pfad, query, ""))

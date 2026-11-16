@@ -19,6 +19,9 @@ BA_API_KEY = "jobboerse-jobsuche"  # öffentlicher Schlüssel laut offizieller D
 # ---------- Websuche (Claude) ----------
 WEB_MAX_SUCHEN = 5     # höchstens so viele Websuchen pro Durchlauf (je ca. 0,01 $)
 WEB_MAX_TREFFER = 10   # höchstens so viele Stellen aus dem Web
+# Prüfung der Web-Treffer mit Web-Fetch (jede Stelle wird geöffnet)
+WEB_FETCH_MAX_PRO_STELLE = 3   # Seitenabrufe pro Stelle (Treffer + ggf. Link von einer Sammelseite)
+WEB_FETCH_MAX_TOKENS = 4000    # Inhalt pro Seite wird auf ca. so viele Tokens gekürzt (Kosten)
 WEB_GESPERRTE_DOMAINS = [
     "linkedin.com",
     "indeed.com",
